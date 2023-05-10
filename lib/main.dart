@@ -101,6 +101,18 @@ class _MyHomePageState extends State<MyHomePage> {
   int _balance = 0;
 
   @override
+  void initState() {
+    super.initState();
+    final breezBridge = Provider.of<BreezBridge>(context, listen: false);
+    breezBridge.nodeStateStream.listen((event) {
+      if (event == null) return;
+      setState(() {
+        _balance = event.maxPayableMsat ~/ 1000;
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
