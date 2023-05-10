@@ -243,7 +243,18 @@ class _SendPaymentDialogState extends State<SendPaymentDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () {},
+          onPressed: () {
+            final BreezBridge breezBridge = context.read();
+            setState(() {
+              _payInProgress = true;
+            });
+            breezBridge
+                .sendPayment(bolt11: invoiceController.text)
+                .then((value) {
+              breezBridge.getNodeState();
+              Navigator.of(context).pop();
+            });
+          },
           child: const Text("OK"),
         ),
         TextButton(
