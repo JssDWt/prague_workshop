@@ -164,7 +164,23 @@ class _ReceivePaymentDialogState extends State<ReceivePaymentDialog> {
   @override
   void initState() {
     super.initState();
-    _invoice = "random";
+    final BreezBridge breezBridge = context.read();
+    breezBridge.invoicePaidStream.listen((event) {
+      if (event.paymentHash == _paymentHash) {
+        breezBridge.getNodeState();
+        Navigator.of(context).pop();
+      }
+    });
+    breezBridge
+        .receivePayment(amountSats: 20000, description: "dev day prague")
+        .then(
+          (value) => setState(
+            () {
+              _invoice = value.bolt11;
+              _paymentHash = value.paymentHash;
+            },
+          ),
+        );
   }
 
   @override
