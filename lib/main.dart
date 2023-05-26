@@ -105,6 +105,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     final breezBridge = Provider.of<BreezBridge>(context, listen: false);
     breezBridge.nodeStateStream.listen((event) {
+      debugPrint("got event. ${event?.maxPayableMsat}");
       if (event == null) return;
       setState(() {
         _balance = event.maxPayableMsat ~/ 1000;
