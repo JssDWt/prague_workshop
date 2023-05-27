@@ -1,16 +1,15 @@
-import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-
 import 'dart:typed_data';
 
+import 'package:bip39/bip39.dart' as bip39;
 import 'package:breez_sdk/breez_bridge.dart';
 import 'package:breez_sdk/bridge_generated.dart' as sdk;
 import 'package:breez_sdk/bridge_generated.dart';
+import 'package:convert/convert.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:bip39/bip39.dart' as bip39;
-import 'package:convert/convert.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 extension InitSDK on BreezBridge {
   Future start() async {
@@ -66,16 +65,20 @@ extension InitSDK on BreezBridge {
 }
 
 void main() {
-  runApp(const MyApp());
+  BreezBridge breezBridge = BreezBridge();
+  breezBridge.initialize();
+  runApp(MyApp(breezBridge));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final BreezBridge breezBridge;
+
+  const MyApp(this.breezBridge, {super.key});
 
   @override
   Widget build(BuildContext context) {
     return Provider(
-      create: (context) => BreezBridge()..start(),
+      create: (context) => breezBridge.start(),
       lazy: false,
       child: MaterialApp(
         title: 'Breez SDK Demo',
@@ -208,7 +211,7 @@ class _ReceivePaymentDialogState extends State<ReceivePaymentDialog> {
             height: 230.0,
             child: _invoice == null
                 ? const Center(child: CircularProgressIndicator())
-                : QrImage(data: _invoice!.toUpperCase()),
+                : QrImageView(data: _invoice!.toUpperCase()),
           ),
         ),
       ),
