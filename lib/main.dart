@@ -11,64 +11,62 @@ import 'package:path_provider/path_provider.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:convert/convert.dart';
 
-extension InitSDK on BreezBridge {
-  Future start() async {
-    initialize();
-    WidgetsFlutterBinding.ensureInitialized();
-    const secureStorage = FlutterSecureStorage();
-    var glCert = await secureStorage.read(key: "gl-cert");
-    var glKey = await secureStorage.read(key: "gl-key");
-    var mnemonic = await secureStorage.read(key: "mnemonic");
-    if (glCert != null && glKey != null && mnemonic != null) {
-      await _initExistingNode(mnemonic, glCert, glKey);
-    } else {
-      await _initNewNode();
-    }
-    await startNode();
+Future _startBreezBridge() async {
+  breezBridge.initialize();
+  WidgetsFlutterBinding.ensureInitialized();
+  const secureStorage = FlutterSecureStorage();
+  var glCert = await secureStorage.read(key: "gl-cert");
+  var glKey = await secureStorage.read(key: "gl-key");
+  var mnemonic = await secureStorage.read(key: "mnemonic");
+  if (glCert != null && glKey != null && mnemonic != null) {
+    await _initExistingNode(mnemonic, glCert, glKey);
+  } else {
+    await _initNewNode();
   }
-
-  Future _initExistingNode(String mnemonic, String glCert, String glKey) async {
-    final seed = bip39.mnemonicToSeed(mnemonic);
-    final sdkConfig = await getConfig();
-    await initServices(
-      config: sdkConfig,
-      seed: seed,
-      creds: sdk.GreenlightCredentials(
-        deviceCert: Uint8List.fromList(hex.decode(glCert)),
-        deviceKey: Uint8List.fromList(hex.decode(glKey)),
-      ),
-    );
-  }
-
-  Future _initNewNode() async {
-    const secureStorage = FlutterSecureStorage();
-    final mnemonic = bip39.generateMnemonic();
-    final seed = bip39.mnemonicToSeed(mnemonic);
-    final sdkConfig = await getConfig();
-
-    final sdk.GreenlightCredentials creds = await registerNode(
-      config: sdkConfig,
-      network: sdk.Network.Bitcoin,
-      seed: seed,
-      inviteCode: "?????",
-    );
-    await secureStorage.write(
-        key: "gl-cert", value: hex.encode(creds.deviceCert));
-    await secureStorage.write(
-        key: "gl-key", value: hex.encode(creds.deviceKey));
-    await secureStorage.write(key: "mnemonic", value: mnemonic);
-  }
-
-  Future<Config> getConfig() async {
-    return (await defaultConfig(sdk.EnvironmentType.Production)).copyWith(
-        workingDir: (await getApplicationDocumentsDirectory()).path,
-        apiKey: "?????");
-  }
+  await breezBridge.startNode();
 }
 
-  BreezBridge breezBridge = BreezBridge();
+Future _initExistingNode(String mnemonic, String glCert, String glKey) async {
+  final seed = bip39.mnemonicToSeed(mnemonic);
+  final sdkConfig = await _getConfig();
+  await breezBridge.initServices(
+    config: sdkConfig,
+    seed: seed,
+    creds: sdk.GreenlightCredentials(
+      deviceCert: Uint8List.fromList(hex.decode(glCert)),
+      deviceKey: Uint8List.fromList(hex.decode(glKey)),
+    ),
+  );
+}
+
+Future _initNewNode() async {
+  const secureStorage = FlutterSecureStorage();
+  final mnemonic = bip39.generateMnemonic();
+  final seed = bip39.mnemonicToSeed(mnemonic);
+  final sdkConfig = await _getConfig();
+
+  final sdk.GreenlightCredentials creds = await breezBridge.registerNode(
+    config: sdkConfig,
+    network: sdk.Network.Bitcoin,
+    seed: seed,
+    inviteCode: "?????",
+  );
+  await secureStorage.write(
+      key: "gl-cert", value: hex.encode(creds.deviceCert));
+  await secureStorage.write(key: "gl-key", value: hex.encode(creds.deviceKey));
+  await secureStorage.write(key: "mnemonic", value: mnemonic);
+}
+
+Future<Config> _getConfig() async {
+  return (await breezBridge.defaultConfig(sdk.EnvironmentType.Production))
+      .copyWith(
+          workingDir: (await getApplicationDocumentsDirectory()).path,
+          apiKey: "?????");
+}
+
+BreezBridge breezBridge = BreezBridge();
 void main() async {
-  breezBridge.start();
+  _startBreezBridge();
   runApp(const MyApp());
 }
 
@@ -78,11 +76,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Breez SDK Demo',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: const MyHomePage(title: 'Breez SDK Demo Home Page'),
+      title: 'Breez SDK Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const MyHomePage(title: 'Breez SDK Demo Home Page'),
     );
   }
 }
@@ -183,10 +181,10 @@ class _ReceivePaymentDialogState extends State<ReceivePaymentDialog> {
     breezBridge
         .receivePayment(amountSats: 20000, description: "dev day prague")
         .then((value) => setState(
-            () {
-              _invoice = value.bolt11;
-              _paymentHash = value.paymentHash;
-            },
+              () {
+                _invoice = value.bolt11;
+                _paymentHash = value.paymentHash;
+              },
             ));
   }
 
