@@ -8,12 +8,13 @@ import 'package:breez_sdk/bridge_generated.dart' as sdk;
 import 'package:breez_sdk/bridge_generated.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:provider/provider.dart';
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:convert/convert.dart';
 
 extension InitSDK on BreezBridge {
   Future start() async {
+    initialize();
+    WidgetsFlutterBinding.ensureInitialized();
     const secureStorage = FlutterSecureStorage();
     var glCert = await secureStorage.read(key: "gl-cert");
     var glKey = await secureStorage.read(key: "gl-key");
@@ -65,29 +66,23 @@ extension InitSDK on BreezBridge {
   }
 }
 
-void main() {
   BreezBridge breezBridge = BreezBridge();
-  breezBridge.initialize();
-  runApp(MyApp(breezBridge));
+void main() async {
+  breezBridge.start();
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final BreezBridge breezBridge;
-
-  const MyApp(this.breezBridge, {super.key});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Provider(
-      create: (context) => breezBridge.start(),
-      lazy: false,
-      child: MaterialApp(
+    return MaterialApp(
         title: 'Breez SDK Demo',
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
         home: const MyHomePage(title: 'Breez SDK Demo Home Page'),
-      ),
     );
   }
 }
@@ -107,9 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    final breezBridge = Provider.of<BreezBridge>(context, listen: false);
     breezBridge.nodeStateStream.listen((event) {
-      debugPrint("got event. ${event?.maxPayableMsat}");
       if (event == null) return;
       setState(() {
         _balance = event.maxPayableMsat ~/ 1000;
@@ -181,7 +174,6 @@ class _ReceivePaymentDialogState extends State<ReceivePaymentDialog> {
   @override
   void initState() {
     super.initState();
-    final BreezBridge breezBridge = context.read();
     breezBridge.invoicePaidStream.listen((event) {
       if (event.paymentHash == _paymentHash) {
         breezBridge.getNodeState();
@@ -190,14 +182,12 @@ class _ReceivePaymentDialogState extends State<ReceivePaymentDialog> {
     });
     breezBridge
         .receivePayment(amountSats: 20000, description: "dev day prague")
-        .then(
-          (value) => setState(
+        .then((value) => setState(
             () {
               _invoice = value.bolt11;
               _paymentHash = value.paymentHash;
             },
-          ),
-        );
+            ));
   }
 
   @override
@@ -261,7 +251,6 @@ class _SendPaymentDialogState extends State<SendPaymentDialog> {
       actions: [
         TextButton(
           onPressed: () {
-            final BreezBridge breezBridge = context.read();
             setState(() {
               _payInProgress = true;
             });
