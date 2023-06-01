@@ -102,9 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     breezBridge.nodeStateStream.listen((event) {
       if (event == null) return;
-      setState(() {
-        _balance = event.maxPayableMsat ~/ 1000;
-      });
+      setState(() => _balance = event.maxPayableMsat ~/ 1000);
     });
   }
 
@@ -174,7 +172,6 @@ class _ReceivePaymentDialogState extends State<ReceivePaymentDialog> {
     super.initState();
     breezBridge.invoicePaidStream.listen((event) {
       if (event.paymentHash == _paymentHash) {
-        breezBridge.getNodeState();
         Navigator.of(context).pop();
       }
     });
@@ -249,15 +246,10 @@ class _SendPaymentDialogState extends State<SendPaymentDialog> {
       actions: [
         TextButton(
           onPressed: () {
-            setState(() {
-              _payInProgress = true;
-            });
+            setState(() => _payInProgress = true);
             breezBridge
                 .sendPayment(bolt11: invoiceController.text)
-                .then((value) {
-              breezBridge.getNodeState();
-              Navigator.of(context).pop();
-            });
+                .then((_) => Navigator.of(context).pop());
           },
           child: const Text("OK"),
         ),
