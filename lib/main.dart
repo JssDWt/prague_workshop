@@ -97,7 +97,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _balance = 0;
+  int _balance = -1;
 
   @override
   void initState() {
