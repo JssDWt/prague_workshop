@@ -4,7 +4,6 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:typed_data';
 
 import 'package:breez_sdk/breez_bridge.dart';
-import 'package:breez_sdk/bridge_generated.dart' as sdk;
 import 'package:breez_sdk/bridge_generated.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
@@ -32,7 +31,7 @@ Future _initExistingNode(String mnemonic, String glCert, String glKey) async {
   await breezBridge.initServices(
     config: sdkConfig,
     seed: seed,
-    creds: sdk.GreenlightCredentials(
+    creds: GreenlightCredentials(
       deviceCert: Uint8List.fromList(hex.decode(glCert)),
       deviceKey: Uint8List.fromList(hex.decode(glKey)),
     ),
@@ -45,9 +44,9 @@ Future _initNewNode() async {
   final seed = bip39.mnemonicToSeed(mnemonic);
   final sdkConfig = await _getConfig();
 
-  final sdk.GreenlightCredentials creds = await breezBridge.registerNode(
+  final GreenlightCredentials creds = await breezBridge.registerNode(
     config: sdkConfig,
-    network: sdk.Network.Bitcoin,
+    network: Network.Bitcoin,
     seed: seed,
     inviteCode: "?????",
   );
@@ -58,13 +57,12 @@ Future _initNewNode() async {
 }
 
 Future<Config> _getConfig() async {
-  return (await breezBridge.defaultConfig(sdk.EnvironmentType.Production))
-      .copyWith(
-          workingDir: (await getApplicationDocumentsDirectory()).path,
-          apiKey: "?????");
+  return (await breezBridge.defaultConfig(EnvironmentType.Production)).copyWith(
+      workingDir: (await getApplicationDocumentsDirectory()).path,
+      apiKey: "?????");
 }
 
-BreezBridge breezBridge = BreezBridge();
+final breezBridge = BreezBridge();
 void main() async {
   _startBreezBridge();
   runApp(const MyApp());
@@ -182,7 +180,9 @@ class _ReceivePaymentDialogState extends State<ReceivePaymentDialog> {
                 _invoice = value.bolt11;
                 _paymentHash = value.paymentHash;
               },
-            ));
+            ))
+        .onError((error, stackTrace) =>
+            debugPrint("ERROR in receivePayment: $error"));
   }
 
   @override
@@ -249,7 +249,9 @@ class _SendPaymentDialogState extends State<SendPaymentDialog> {
             setState(() => _payInProgress = true);
             breezBridge
                 .sendPayment(bolt11: invoiceController.text)
-                .then((_) => Navigator.of(context).pop());
+                .then((_) => Navigator.of(context).pop())
+                .onError((error, stackTrace) =>
+                    debugPrint("ERROR in sendPayment: $error"));
           },
           child: const Text("OK"),
         ),
